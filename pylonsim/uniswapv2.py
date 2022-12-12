@@ -55,9 +55,14 @@ class Uniswap:
 
         # since we can't revert stuff here, need to do an initial k check
         balance0 = self.float_token.balance_of(self.address) + amount0_in - amount0_out
-        balance1 = self.anchor_token.balance_of(self.address) + amount1_in - amount0_out
+        balance1 = self.anchor_token.balance_of(self.address) + amount1_in - amount1_out
 
-        if balance0 * balance1 >= self.reserve0 * self.reserve1:
+        # print("Balance0: {}, Balance1: {}, reserve0: {}, reserve1: {}"
+          #    .format(balance0, balance1, self.reserve0, self.reserve1))
+        # print("Kp, k", balance0 * balance1, self.reserve0 * self.reserve1)
+        if balance0 * balance1 + 0.1 >= self.reserve0 * self.reserve1:
+
+
             self.float_token.transfer(to, self.address, amount0_in)
             self.anchor_token.transfer(to, self.address, amount1_in)
 
@@ -68,6 +73,7 @@ class Uniswap:
             self._update(balance0, balance1)
             return amount0_out, amount1_out
         else:
+            print("Uniswap: K")
             return -1, -1
 
     def get_amount_out(self, amount_in, float_is_in):
@@ -121,3 +127,34 @@ class Uniswap:
         self._update(balance0, balance1)
 
         return amount
+
+    def price(self):
+        price = self.reserve1/self.reserve0
+        print("Price: ", price)
+        return self.reserve1/self.reserve0
+
+    # Calculates amount of tokens to pump/dump and executes swap to arrive at the desired price
+    def set_price(self, price, to):
+
+        res_in = 0
+        res_out = 0
+        adjusted_price = 0
+        dump = price < self.price()
+        if dump:
+            res_in = self.reserve0
+            res_out = self.reserve1
+            adjusted_price = 1/price
+        else:
+            res_in = self.reserve1
+            res_out = self.reserve0
+            adjusted_price = price
+
+        # x is amount of res_in token to dump
+        x = math.sqrt(adjusted_price * res_in * res_out) - res_in
+        print("X: ", x)
+        out = self.get_amount_out(x, dump)
+        if dump:
+            # res in is 0
+            self.swap(x, 0, 0, out, to)
+        else:
+            self.swap(0, x, out, 0, to)

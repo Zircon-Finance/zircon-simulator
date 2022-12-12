@@ -384,7 +384,6 @@ class Pylon:
 
         if is_anchor:
 
-
             reserve_pt = sync_reserve1 * self.anchor_pool_token.total_supply / self.vab
 
             ptu_amount = min(reserve_pt, liquidity)
