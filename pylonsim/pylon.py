@@ -68,6 +68,7 @@ class Pylon:
         (reserve0, reserve1) = self.get_pair_reserves()
 
         (sync_reserve0, sync_reserve1) = self.get_sync_reserves()
+        print("DEBUG: Sync0 before PTB: ", sync_reserve0)
 
         float_liquidity_owned = 0
         ptb_max = 0
@@ -78,7 +79,8 @@ class Pylon:
         if not is_anchor:
             float_liquidity_owned = (sync_reserve0 * ptb / (2 * reserve0)) + ptb * self.gamma
 
-            ptb_max = amount_in * ptb / 2 * reserve0
+            ptb_max = amount_in * ptb / (2 * reserve0)
+            print("MintPool: Liquidity val in ptb: ", ptb_max)
 
             amount_out = self.handle_sync_async(amount_in, reserve0, sync_reserve0, False)
         else:
@@ -95,6 +97,7 @@ class Pylon:
 
             pair_reserve0, pair_reserve1 = self.get_pair_reserves()
             sync_reserve0, sync_reserve1 = self.get_sync_reserves()
+            print("DEBUG: Sync0 for PTB: ", sync_reserve0)
 
             ptb_new = self.uniswap.pool_token.balance_of(self.address)
 
@@ -103,6 +106,10 @@ class Pylon:
             if new_float_liquidity > float_liquidity_owned:
 
                 liquidity = self.float_pool_token.total_supply * ((new_float_liquidity/float_liquidity_owned) - 1)
+                print("Liquidity minted: {}, oldPTT: {}, newPTT: {}".format(liquidity, float_liquidity_owned,
+                                                                            new_float_liquidity))
+
+                print("DEBUG: reserveOnly PTB old: {}, resOnly ptb new: {}".format(ptb * self.gamma, ptb_new * new_gamma))
                 self.float_pool_token.mint(to, liquidity)
             else:
                 print("Error VFB, Old Liq: {}, New Liq: {}".format(float_liquidity_owned, new_float_liquidity))
@@ -129,6 +136,7 @@ class Pylon:
         (new_reserve0, new_reserve1) = self.get_pair_reserves()
 
         async_amount_in = amount_in - free_space
+        print("HandleSync: AsyncIn: ", async_amount_in)
         async_amount_out = 0
         if is_anchor:
             sqrtk = math.sqrt(new_reserve0 * new_reserve1)

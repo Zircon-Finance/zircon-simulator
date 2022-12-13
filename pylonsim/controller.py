@@ -71,9 +71,11 @@ def parse_command():
 
 def is_number(num):
     try:
-        if isinstance(int(num), int) or isinstance(float(num), float):
+        if isinstance(int(num), int):
             return True
-        else:
-            return False
     except:
-        return False
+        try:
+            if isinstance(float(num), float):
+                return True
+        except:
+            return False
