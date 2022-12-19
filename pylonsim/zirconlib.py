@@ -27,25 +27,25 @@ def calculate_gamma(vab, vfb, p2x, p2y, sync_reserve0, sync_reserve1, reserve0, 
 
     print("Debug: Gamma inputs: vab: {}, vfb: {}, p2x: {}, p2y: {}".format(adjusted_vab, adjusted_vfb, p2x, p2y))
     print("Debug: Gamma kv: {}, k: {}".format(kv, k))
-    if kv <= k:
-        p3x = ((math.sqrt(k) - math.sqrt(k - kv))/adjusted_vfb) ** 2
-    else:
-        p3x = adjusted_vab ** 2 / k
+    # if kv <= k:
+    # p3x = ((math.sqrt(k) - math.sqrt(k - kv))/adjusted_vfb) ** 2
+    # else:
+    p3x = adjusted_vab ** 2 / k
 
     print("Debug: Gamma p3x: {}, p3y: {}".format(p3x, adjusted_vab))
 
     if reserve1/reserve0 > p3x:
         return 1 - adjusted_vab / (reserve1 * 2), False
     else:
-        if kv <= k:
-            # Just good ole y = vfbx
-            return (adjusted_vfb / (2 * reserve0)), True
-        else:
-            # Here we must make the parabola
-            # p3y is simply vab
-            a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab)
-            x = reserve1/reserve0
-            return ((a * (x ** 2) + b * x)/(2 * reserve1)), True
+        # if kv <= k:
+        #     # Just good ole y = vfbx
+        #     return (adjusted_vfb / (2 * reserve0)), True
+        # else:
+        # Here we must make the parabola
+        # p3y is simply vab
+        a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab)
+        x = reserve1/reserve0
+        return ((a * (x ** 2) + b * x)/(2 * reserve1)), True
 
 
 def calculate_parabola_coefficients(p2x, p2y, p3x, p3y):
@@ -65,6 +65,7 @@ def calculate_parabola_coefficients(p2x, p2y, p3x, p3y):
 
 
 def calculate_p2(k, vab, vfb):
+    print("Debug: ZirconLib: P2 calc k: {}, vab: {}, vfb: {}".format(k, vab, vfb))
     p2y = (2 * k/vfb) - vab
     p2x = p2y/vfb
     return p2x, p2y

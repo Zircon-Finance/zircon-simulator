@@ -252,9 +252,10 @@ class Pylon:
 
             ftv = 2 * reserve1 * self.gamma
             ftv_f = 2 * reserve0 * self.gamma
+            print("Debug: MintAsync: Price: {}, ftv_f: {}".format(reserve1/reserve0, ftv_f))
             print("Debug: Ftv: {}, Vfb: {}, 2 * amount1: {}".format(ftv, self.vfb, 2 * amount1))
             self.vfb += self.vfb * (total_amount / (ftv_f + sync_reserve0))
-            desired_ftv = ftv + 2 * amount1
+            desired_ftv = (ftv_f + total_amount) * reserve1/reserve0
 
             #
             # self.anchor_k = zirconlib.anchor_factor_float_add(
@@ -296,6 +297,9 @@ class Pylon:
 
             if new_float_liquidity > float_liquidity_owned:
                 liquidity = self.float_pool_token.total_supply * ((new_float_liquidity/float_liquidity_owned) - 1)
+
+                # Required for cases when the 50/50 isn't respected due to more anchors than necessary
+                liquidity = min(liquidity, self.float_pool_token.total_supply * ptb_max/float_liquidity_owned)
                 self.float_pool_token.mint(to, liquidity)
             else:
                 print("VFB Error")
@@ -343,6 +347,7 @@ class Pylon:
 
             else:
 
+                # TODO: Review this
                 # the adjustment for slippage is done later, in theory
                 removed_amount = ptu * reserve1 * 2 / self.uniswap.pool_token.total_supply
                 desired_ftv = 2 * reserve1 * self.gamma - removed_amount
@@ -550,7 +555,7 @@ class Pylon:
         x = new_reserve1/new_reserve0
 
         # p2 can't be placed later than p3
-        if kv > k and (x < (adjusted_vab ** 2)/k):
+        if x < (adjusted_vab ** 2)/k:
             self.p2y = adjusted_ftv
             self.p2x = new_reserve1/new_reserve0
 
@@ -572,6 +577,8 @@ class Pylon:
         print("PylonUpdate: Vfb: {}, Vab: {},".format(self.vfb, self.vab))
         ptb_new = self.uniswap.pool_token.total_supply
         print("PylonUpdate: FloatPTB: {}".format(((sync0 * ptb_new)/(2 * reserve0)) + (ptb_new * new_gamma[0])))
+        omega = (1 - new_gamma[0]) * new_reserve1 * 2 / (self.vab - sync1)
+        print("PylonUpdate: Omega: ", omega)
         return new_gamma
 
     def update_reserves_removing_excess(self, new_reserve0, new_reserve1, max0, max1):

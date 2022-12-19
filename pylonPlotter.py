@@ -47,10 +47,10 @@ def calculate_parameters(reserve0, reserve1, vab, vfb, p2x, p2y):
     kv = vab * vfb
 
     p3x = 0
-    if kv <= k:
-        p3x = ((math.sqrt(k) - math.sqrt(k - kv))/vfb) ** 2
-    else:
-        p3x = vab ** 2 / k
+    # if kv <= k:
+    #     p3x = ((math.sqrt(k) - math.sqrt(k - kv))/vfb) ** 2
+    # else:
+    p3x = vab ** 2 / k
 
     a, b = zirconlib.calculate_parabola_coefficients(p2x, p2y, p3x, vab)
 
@@ -61,15 +61,17 @@ def pylon_function(x, k, vab, vfb, p3x, a, b):
     reserve1 = numpy.sqrt(k*x)
     result = numpy.zeros_like(x)
 
+    # TODO: Switch to using the gamma formula directly
+
     kv = vab * vfb
 
     for index, item in enumerate(x):
         if x[index] >= p3x:
             result[index] = 2 * reserve1[index] - vab
         else:
-            if kv <= k:
-                result[index] = vfb * x[index]
-            else:
-                result[index] = (a * (x[index] ** 2) + b * x[index])
+            # if kv <= k:
+            #     result[index] = vfb * x[index]
+            # else:
+            result[index] = (a * (x[index] ** 2) + b * x[index])
 
     return result

@@ -13,7 +13,7 @@ from pylonsim.uniswapv2 import Uniswap
 
 def start():
 
-    debug = True
+    debug = False
     # Use a breakpoint in the code line below to debug your script.
     float_token = PylonToken("ETH", 1000)
     anchor_token = PylonToken("USDC", 1)
