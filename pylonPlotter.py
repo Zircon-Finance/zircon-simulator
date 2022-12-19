@@ -5,6 +5,8 @@ import math
 import matplotlib.pyplot as plot
 import numpy
 
+from pylonsim import zirconlib
+
 
 def show_stats(reserve0, reserve1, vab, anchorK):
     price = reserve1/reserve0
@@ -24,36 +26,50 @@ def show_stats(reserve0, reserve1, vab, anchorK):
     print("Price is {}, vfb is {}, reserve switch is {}, while gamma is {}".format(price, vfb, reserveSwitch, gamma))
 
 
-def plot_pylon(reserve0, reserve1, vab, anchorK):
-    params = calculate_parameters(reserve0, reserve1, vab, anchorK)
+def plot_pylon(reserve0, reserve1, vab, vfb, p2x, p2y):
+    params = calculate_parameters(reserve0, reserve1, vab, vfb, p2x, p2y)
 
-    x = numpy.linspace(0, 0.01, 10000)
+    end_price = reserve1/reserve0 * 5
 
-    y = pylon_function(x, params[0], vab, anchorK, params[2])
+    x = numpy.linspace(0, end_price, 10000)
+
+    y = pylon_function(x, params[0], vab, vfb, params[2], params[3], params[4])
 
     plot.plot(x, y)
 
     plot.show()
 
 
-
-def calculate_parameters(reserve0, reserve1, vab, anchorK):
+def calculate_parameters(reserve0, reserve1, vab, vfb, p2x, p2y):
     price = reserve1 / reserve0
     tpv = reserve1 * 2
     k = reserve0 * reserve1
+    kv = vab * vfb
 
-    vfb = k / (vab * anchorK)
-    sqrtKFactor = math.sqrt(anchorK ** 2 - anchorK)
-    vabMultiplier = anchorK - sqrtKFactor if sqrtKFactor < anchorK else anchorK + sqrtKFactor
-    reserveSwitch = vab * vabMultiplier
+    p3x = 0
+    if kv <= k:
+        p3x = ((math.sqrt(k) - math.sqrt(k - kv))/vfb) ** 2
+    else:
+        p3x = vab ** 2 / k
 
-    return [k, vfb, reserveSwitch]
+    a, b = zirconlib.calculate_parabola_coefficients(p2x, p2y, p3x, vab)
+
+    return [k, kv, p3x, a, b]
 
 
-def pylon_function(x, k, vab, anchorK, reserve_switch):
+def pylon_function(x, k, vab, vfb, p3x, a, b):
     reserve1 = numpy.sqrt(k*x)
     result = numpy.zeros_like(x)
-    mask = reserve1 > reserve_switch
-    result[mask] = 2 * reserve1[mask] - vab
-    result[~mask] = k * x[~mask] / (vab * anchorK)
+
+    kv = vab * vfb
+
+    for index, item in enumerate(x):
+        if x[index] >= p3x:
+            result[index] = 2 * reserve1[index] - vab
+        else:
+            if kv <= k:
+                result[index] = vfb * x[index]
+            else:
+                result[index] = (a * (x[index] ** 2) + b * x[index])
+
     return result

@@ -26,15 +26,15 @@ def start():
 
     pylon.init_pylon("self", 10, 10000)
 
-    pylon.mint_pool_tokens("self", 1, False)
-
-    pylon.burn("self", 1, False)
-
-    pylon.mint_async("self", 0.5, 500, False)
-
-    pylon.burn_async("self", 1, False)
-
-    pylon.mint_pool_tokens("self", 1, False)
+    # pylon.mint_pool_tokens("self", 1, False)
+    #
+    # pylon.burn("self", 1, False)
+    #
+    # pylon.mint_async("self", 0.5, 500, False)
+    #
+    # pylon.burn_async("self", 1, False)
+    #
+    # pylon.mint_pool_tokens("self", 1, False)
 
     while True:
 
@@ -47,7 +47,13 @@ def start():
                 if command == "debug":
                     debug = not debug
                 eval(command)
-                print("posteval", command)
+
+                plot_pylon(pylon.uniswap.reserve0,
+                           pylon.uniswap.reserve1,
+                           pylon.vab - pylon.sync_reserve1,
+                           pylon.vfb - pylon.sync_reserve0,
+                           pylon.p2x,
+                           pylon.p2y)
             except Exception as e:
                 print("Error executing command: ", e)
         else:
@@ -57,11 +63,17 @@ def start():
             if command == "debug":
                 debug = not debug
             eval(command)
-            print("posteval ", command)
+
+            plot_pylon(pylon.uniswap.reserve0,
+                       pylon.uniswap.reserve1,
+                       pylon.vab - pylon.sync_reserve1,
+                       pylon.vfb - pylon.sync_reserve0,
+                       pylon.p2x,
+                       pylon.p2y)
 
 
-    show_stats(38897447*0.995, 10915*0.995, 29417-2488, 1.055)  # Press ⌘F8 to toggle the breakpoint.
-    plot_pylon(38897447*0.995, 10915*0.995, 29417-2488, 1.055)
+
+    #show_stats(38897447*0.995, 10915*0.995, 29417-2488, 1.055)  # Press ⌘F8 to toggle the breakpoint.
 
 
 
