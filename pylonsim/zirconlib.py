@@ -31,7 +31,7 @@ def calculate_gamma(vab, vfb, p2x, p2y, sync_reserve0, sync_reserve1, reserve0, 
     # p3x = ((math.sqrt(k) - math.sqrt(k - kv))/adjusted_vfb) ** 2
     # else:
     p3x = adjusted_vab ** 2 / k
-
+    print("Debug: Gamma adj_vab: {}, Gamma k: {}".format(adjusted_vab, k))
     print("Debug: Gamma p3x: {}, p3y: {}".format(p3x, adjusted_vab))
 
     if reserve1/reserve0 > p3x:
@@ -45,7 +45,38 @@ def calculate_gamma(vab, vfb, p2x, p2y, sync_reserve0, sync_reserve1, reserve0, 
         # p3y is simply vab
         a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab)
         x = reserve1/reserve0
-        return ((a * (x ** 2) + b * x)/(2 * reserve1)), True
+
+        # derivative check at p3x (crossing point)
+        # sufficient to check if the parabola is too curved at any point
+        if 2 * a * p3x + b > 0:
+            return ((a * (x ** 2) + b * x)/(2 * reserve1)), True
+        else:
+            # In solidity this should just revert
+            print("Error: Derivative is negative")
+            return (adjusted_vfb / (2 * reserve0)), True
+
+
+def get_ftv_for_x(x, p2x, p2y, k, adjusted_vab):
+    print("Debug: getFTV adj_vab: {}, getFTV k: {}".format(adjusted_vab, k))
+    p3x = (adjusted_vab ** 2) / k
+
+    result = 0
+    if x > p3x:
+        result = 2 * math.sqrt(k * x) - adjusted_vab
+    else:
+
+        a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab)
+
+        # derivative check at p3x (crossing point)
+        # sufficient to check if the parabola is too curved at any point
+        if 2 * a * p3x + b > 0:
+            result = a * (x ** 2) + b * x
+        else:
+            # In solidity this should just revert
+            print("Error: Derivative is negative")
+            return -1
+    print("Debug: GetFTV: X: {}, result: {}, p3x: {}".format(x, result, p3x))
+    return result
 
 
 def calculate_parabola_coefficients(p2x, p2y, p3x, p3y):

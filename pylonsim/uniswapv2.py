@@ -3,6 +3,10 @@ import math
 from pylonsim.pylontoken import PylonToken
 
 
+def get_amount_out_manual(reserve_in, reserve_out, amount_in):
+    return amount_in * reserve_out / (reserve_in + amount_in)
+
+
 class Uniswap:
     def __init__(self, float_token, anchor_token):
         self.float_token = float_token
@@ -106,19 +110,22 @@ class Uniswap:
 
     def burn_one_side(self, _from, to, liquidity, get_float):
 
+        total_supply = self.pool_token.total_supply
         self.pool_token.burn(_from, liquidity)
 
         balance0 = self.float_token.balance_of(self.address)
         balance1 = self.anchor_token.balance_of(self.address)
 
-        amount0 = liquidity * balance0 / self.pool_token.total_supply
-        amount1 = liquidity * balance1 / self.pool_token.total_supply
+        amount0 = liquidity * balance0 / total_supply
+        amount1 = liquidity * balance1 / total_supply
+
         amount = 0
         if get_float:
-            amount = amount0 + self.get_amount_out(amount1, False)
+            amount = amount0 + get_amount_out_manual(balance1-amount1, balance0-amount0, amount1)
+            print("Debug: BurnOne: amount0: {}, amount1: {}, amount: {}".format(amount0, amount1, amount))
             self.float_token.transfer(self.address, to, amount)
         else:
-            amount = amount1 + self.get_amount_out(amount0, True)
+            amount = amount1 + get_amount_out_manual(balance0-amount0, balance1-amount1, amount0)
             self.anchor_token.transfer(self.address, to, amount)
 
         balance0 = self.float_token.balance_of(self.address)
