@@ -112,11 +112,10 @@ class Pylon:
             desired_ftv = (ftv + amount_pool) * reserve1/reserve0
         else:
 
-            # TODO: need to account for sync minting of float
-
             amount_out, float_into_pool, _ = self.handle_sync_async(amount_in, reserve1, sync_reserve1, True)
             liquidity = amount_out * self.anchor_pool_token.total_supply / self.vab
 
+            # TODO: Modify this to getFTV for X too?
             self.vab += amount_out
             desired_ftv = (2 * reserve1 * self.gamma) + float_into_pool * reserve1/reserve0
             self.anchor_pool_token.mint(to, liquidity)
@@ -137,16 +136,17 @@ class Pylon:
 
             if new_float_liquidity > float_liquidity_owned:
 
+                ptb_value = new_float_liquidity - float_liquidity_owned
                 liquidity = self.float_pool_token.total_supply * ((new_float_liquidity/float_liquidity_owned) - 1)
                 print("Liquidity minted: {}, oldPTT: {}, newPTT: {}".format(liquidity, float_liquidity_owned,
                                                                             new_float_liquidity))
 
                 # clamps liquidity to avoid excessive slashing from dumping price
                 # user already suffers extra slashing due to new amount_out logic
-                if liquidity < ptb_min:
+                if ptb_value < ptb_min:
                     liquidity = self.float_pool_token.total_supply * ptb_min/float_liquidity_owned
                 else:
-                    if liquidity > ptb_max:
+                    if ptb_value > ptb_max:
                         liquidity = self.float_pool_token.total_supply * ptb_max/float_liquidity_owned
 
                 kv = (self.vfb - sync_reserve0) * (self.vab - sync_reserve1)
@@ -639,6 +639,3 @@ class Pylon:
 
     def get_sync_reserves(self):
         return self.sync_reserve0, self.sync_reserve1
-
-    def my_method(self):
-        print("This is my method")
