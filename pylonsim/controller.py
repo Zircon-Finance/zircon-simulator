@@ -30,6 +30,8 @@ def parse_command():
 
     params = command.split(" ")
 
+    params = [x.strip('') for x in params]
+
     print(params)
 
     selector = params[0]

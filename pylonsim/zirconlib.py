@@ -1,108 +1,25 @@
 import math
 
 
-def calculate_gamma(vab, vfb, p2x, p2y, sync_reserve0, sync_reserve1, reserve0, reserve1):
+def calculate_gamma(vab, anchor_k, sync_reserve1, reserve1):
 
-    # Parabolic VFB
-
-    # We simply have a very open parabola defined by three points:
-    # P1 = (0,0)
-    # P2 = (y/VFB, 2k/vfb - vab) or (custom point based on fitting to liquidity changes)
-    # P3 = TPV = 2 sqrt(kx) = vab (principle behing kx/vab formula)
-
-    # P2 is in the base case a point defined as having the same Y as the point of closest approach
-    # between 2kx and vfbx, which is conveniently found as d(2kx)/dx = vfb
-
-    # P2 may be stored in memory if an addition/removal of float liquidity
-    # doesn't satisfy the principle ftv' = ftv + amIn
-    #
-    # We then fit a parabola with these three points.
-
+    tpv = reserve1 * 2
     adjusted_vab = vab - sync_reserve1
-    adjusted_vfb = vfb - sync_reserve0
 
-    k = reserve0 * reserve1
-    kv = adjusted_vfb * adjusted_vab
-    p3x = 0
+    sqrtk_factor = math.sqrt(anchor_k ** 2 - anchor_k)
+    vabMultiplier = anchor_k - sqrtk_factor \
+        if sqrtk_factor < anchor_k else anchor_k + sqrtk_factor
 
-    print("Debug: Gamma inputs: vab: {}, vfb: {}, p2x: {}, p2y: {}".format(adjusted_vab, adjusted_vfb, p2x, p2y))
-    print("Debug: Gamma kv: {}, k: {}".format(kv, k))
-    # if kv <= k:
-    # p3x = ((math.sqrt(k) - math.sqrt(k - kv))/adjusted_vfb) ** 2
-    # else:
-    p3x = adjusted_vab ** 2 / k
-    print("Debug: Gamma adj_vab: {}, Gamma k: {}".format(adjusted_vab, k))
-    print("Debug: Gamma p3x: {}, p3y: {}".format(p3x, adjusted_vab))
+    reserve_switch = adjusted_vab * vabMultiplier
 
-    if reserve1/reserve0 > p3x:
-        return 1 - adjusted_vab / (reserve1 * 2), False
+    if reserve1 > reserve_switch:
+        return 1 - adjusted_vab/tpv, False
     else:
-        # if kv <= k:
-        #     # Just good ole y = vfbx
-        #     return (adjusted_vfb / (2 * reserve0)), True
-        # else:
-        # Here we must make the parabola
-        # p3y is simply vab
-        a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab)
-        x = reserve1/reserve0
-
-        # derivative check at p3x (crossing point)
-        # sufficient to check if the parabola is too curved at any point
-        if 2 * a * p3x + b > 0:
-            return ((a * (x ** 2) + b * x)/(2 * reserve1)), True
-        else:
-            # In solidity this should just revert
-            print("Error: Derivative is negative")
-            return (adjusted_vfb / (2 * reserve0)), True
+        return tpv/(4*adjusted_vab*anchor_k), True
 
 
-def get_ftv_for_x(x, p2x, p2y, k, adjusted_vab):
-    print("Debug: getFTV adj_vab: {}, getFTV k: {}".format(adjusted_vab, k))
-    p3x = (adjusted_vab ** 2) / k
-
-    result = 0
-    if x > p3x:
-        result = 2 * math.sqrt(k * x) - adjusted_vab
-    else:
-
-        a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab)
-
-        # derivative check at p3x (crossing point)
-        # sufficient to check if the parabola is too curved at any point
-        if 2 * a * p3x + b > 0:
-            result = a * (x ** 2) + b * x
-        else:
-            # In solidity this should just revert
-            print("Error: Derivative is negative")
-            return -1
-    print("Debug: GetFTV: X: {}, result: {}, p3x: {}".format(x, result, p3x))
-    return result
-
-
-def calculate_parabola_coefficients(p2x, p2y, p3x, p3y):
-    # returns a and b to construct the ftv parabola
-
-    if p3x - p2x == 0:
-        return 0, p3y/p3x # this is basically vfb
-    a_num = p3y * p2x - p3x * p2y
-    a_den = p2x * p3x * (p3x - p2x)
-    a = a_num/a_den
-
-    b = p2y/p2x - p2x * a
-
-    print("Parabola a: {}, b: {}".format(a, b))
-
-    return a, b
-
-
-def calculate_p2(k, vab, vfb):
-    print("Debug: ZirconLib: P2 calc k: {}, vab: {}, vfb: {}".format(k, vab, vfb))
-    p2y = (2 * k/vfb) - vab
-    p2x = p2y/vfb
-    return p2x, p2y
 def get_maximum(reserve0, reserve1, b0, b1):
     px = reserve0 * b1/reserve1
-
     if px > b0:
         return b0, b0 * reserve1 / reserve0
     else:
