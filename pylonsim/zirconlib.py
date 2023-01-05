@@ -7,7 +7,8 @@ def calculate_gamma(vab, anchor_k, sync_reserve1, reserve1):
     adjusted_vab = vab - sync_reserve1
 
     sqrtk_factor = math.sqrt(anchor_k ** 2 - anchor_k)
-    vabMultiplier = anchor_k - sqrtk_factor if sqrtk_factor < anchor_k else anchor_k + sqrtk_factor
+    vabMultiplier = anchor_k - sqrtk_factor \
+        if sqrtk_factor < anchor_k else anchor_k + sqrtk_factor
 
     reserve_switch = adjusted_vab * vabMultiplier
 
@@ -19,7 +20,6 @@ def calculate_gamma(vab, anchor_k, sync_reserve1, reserve1):
 
 def get_maximum(reserve0, reserve1, b0, b1):
     px = reserve0 * b1/reserve1
-
     if px > b0:
         return b0, b0 * reserve1 / reserve0
     else:
