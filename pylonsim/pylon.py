@@ -101,6 +101,8 @@ class Pylon:
         if not is_anchor:
             float_liquidity_owned = (sync_reserve0 * ptb / (2 * reserve0)) + ptb * self.gamma
 
+            print("Float Liquidity Owned : {} , ptb: {}, gamma: {}", float_liquidity_owned, ptb, self.gamma )
+
             ptb_max = amount_in * ptb / (2 * reserve0)
             print("MintPool: Liquidity val in ptb: ", ptb_max)
 
@@ -110,6 +112,15 @@ class Pylon:
             print("Debug: Initial FTV: {}, AmountPool: {}".format(ftv * reserve1/reserve0, amount_pool))
             self.vfb += self.vfb * true_amount_out/(ftv + sync_reserve0)
             desired_ftv = (ftv + amount_pool) * reserve1/reserve0
+            desired_ftv_from_formula = zirconlib.get_ftv_for_x(
+                reserve1 / reserve0,
+                self.p2x,
+                self.p2y,
+                reserve1 * reserve0,
+                self.vab - sync_reserve1
+            )
+            print("FTV Formula: {}, FTV no formula: {}".format(desired_ftv_from_formula, desired_ftv))
+
         else:
 
             amount_out, float_into_pool, _ = self.handle_sync_async(amount_in, reserve1, sync_reserve1, True)
@@ -117,11 +128,20 @@ class Pylon:
 
             # TODO: Modify this to getFTV for X too?
             self.vab += amount_out
-            desired_ftv = (2 * reserve1 * self.gamma) + float_into_pool * reserve1/reserve0
+            desired_ftv = (2 * reserve1 * self.gamma) + (2 * float_into_pool * self.gamma) * reserve1/reserve0
+
+            desired_ftv_from_formula = zirconlib.get_ftv_for_x(
+                reserve1/reserve0,
+                self.p2x,
+                self.p2y,
+                reserve1*reserve0,
+                self.vab - sync_reserve1
+            )
+            print("FTV Formula: {}, FTV no formula: {}".format(desired_ftv_from_formula, desired_ftv))
+
             self.anchor_pool_token.mint(to, liquidity)
 
         new_gamma, _ = self._update(desired_ftv)
-
 
         if not is_anchor:
 
@@ -157,11 +177,12 @@ class Pylon:
             else:
                 print("Error VFB, Old Liq: {}, New Liq: {}".format(float_liquidity_owned, new_float_liquidity))
 
-
+        return liquidity
 
     def handle_sync_async(self, amount_in, pair_reserve, sync_reserve, is_anchor):
 
-        max = pair_reserve * self.max_sync
+        max = 0
+        # pair_reserve * self.max_sync
 
         free_space = 0
         amount_out = 0
@@ -182,6 +203,7 @@ class Pylon:
         if py < 0 or px < 0:
             py = 0
             px = 0
+
         sync_mint = 0
         if is_anchor:
             max = (res1 + py) * self.max_sync
@@ -207,10 +229,10 @@ class Pylon:
         async_amount_out = 0
         true_amount_out = 0
         if is_anchor:
-            sqrtk = math.sqrt(new_reserve0 * new_reserve1)
-            sqrtk_prime = math.sqrt(new_reserve0 * (new_reserve1 + async_amount_in))
+            sqrt_k = math.sqrt(new_reserve0 * new_reserve1)
+            sqrt_k_prime = math.sqrt(new_reserve0 * (new_reserve1 + async_amount_in))
 
-            liq_percentage = (sqrtk_prime - sqrtk) / sqrtk
+            liq_percentage = (sqrt_k_prime - sqrt_k) / sqrt_k
 
             async_amount_out = new_reserve1 * 2 * liq_percentage
 
@@ -224,16 +246,16 @@ class Pylon:
             #                                                   new_reserve1)
 
         else:
-            sqrtk = math.sqrt(new_reserve0 * new_reserve1)
-            sqrtk_prime = math.sqrt((new_reserve0 + async_amount_in) * new_reserve1)
+            sqrt_k = math.sqrt(new_reserve0 * new_reserve1)
+            sqrt_k_prime = math.sqrt((new_reserve0 + async_amount_in) * new_reserve1)
 
-            # we divide by sqrtk prime instead of sqrtk to create additional slashing
+            # we divide by sqrt_k prime instead of sqrt_k to create additional slashing
             # since this addition of liquidity is dumping the price significantly
             # and making other floats lose
             # this is a middle ground since the "snapshot" method
             # introduces way too much slippage
-            liq_percentage = (sqrtk_prime - sqrtk) / sqrtk
-            liq_percentage_adjusted = (sqrtk_prime - sqrtk) / sqrtk_prime
+            liq_percentage = (sqrt_k_prime - sqrt_k) / sqrt_k
+            liq_percentage_adjusted = (sqrt_k_prime - sqrt_k) / sqrt_k_prime
 
             async_amount_out = new_reserve0 * 2 * liq_percentage_adjusted
             true_amount_out = new_reserve0 * 2 * liq_percentage
@@ -250,7 +272,6 @@ class Pylon:
             #     True
             # )
         amount_out += async_amount_out
-
 
         px = 0
         if free_space > 0:
@@ -337,6 +358,8 @@ class Pylon:
             else:
                 print("VFB Error")
 
+        return liquidity
+
     def burn(self, to, liquidity, is_anchor):
         print("\n====Burn====")
         self.sync()
@@ -349,6 +372,8 @@ class Pylon:
 
         reserve0, reserve1 = self.get_pair_reserves()
         desired_ftv = 2 * reserve1 * self.gamma
+
+        print("Burn from Pylon Reserves: {}".format(amount))
 
         if reserve_pt < liquidity:
 
@@ -372,15 +397,13 @@ class Pylon:
                                                       reserve1*reserve0,
                                                       self.vab - sync_reserve1)
 
-
-
             else:
-
 
                 percentage_removed = ptu / ((self.uniswap.pool_token.balance_of(self.address)) * self.gamma)
 
                 print("Debug: % removed: {}".format(percentage_removed))
-                self.uniswap.burn_one_side(self.address, to, ptu, True)
+                amount = self.uniswap.burn_one_side(self.address, to, ptu, True)
+                print("Debug : amount: {}".format(amount))
                 (new_reserve0, new_reserve1) = self.get_pair_reserves()
                 desired_ftv = zirconlib.get_ftv_for_x(new_reserve1 / new_reserve0,
                                                       self.p2x,
@@ -399,6 +422,7 @@ class Pylon:
 
         self._update(desired_ftv)
 
+
     def burn_async(self, to, liquidity, is_anchor):
         print("\n====BurnAsync====")
         self.sync()
@@ -411,7 +435,8 @@ class Pylon:
         if is_anchor:
             max_pool_tokens = self.anchor_pool_token.total_supply * (1 - (sync_reserve1/self.vab))
         else:
-            max_pool_tokens = self.float_pool_token.total_supply * (1 - (sync_reserve0 / (reserve0 * 2 * self.gamma + sync_reserve0)))
+            max_pool_tokens = self.float_pool_token.total_supply * \
+                              (1 - (sync_reserve0 / (reserve0 * 2 * self.gamma + sync_reserve0)))
 
         if liquidity > max_pool_tokens:
             print("BurnAsync: Max Liquidity error, maxPT: ", max_pool_tokens)
@@ -427,7 +452,8 @@ class Pylon:
 
             # self.anchor_k = zirconlib.calculate_anchor_factor_burn(
             #     self.is_line_formula,
-            #     self.vab * liquidity / self.anchor_pool_token.total_supply,
+            #     self.vab
+            #    * liquidity / self.anchor_pool_token.total_supply,
             #     ptu,
             #     ptb,
             #     self.anchor_k,
@@ -468,8 +494,6 @@ class Pylon:
         max1 = reserve1 * self.max_sync
 
         self.update_reserves_removing_excess(pylon_reserve0, pylon_reserve1, max0, max1)
-
-
         (reserve0, reserve1) = self.get_pair_reserves()
         (pylon_reserve0, pylon_reserve1) = self.get_sync_reserves()
 
@@ -506,6 +530,7 @@ class Pylon:
 
     def burn_pylon_reserves(self, is_anchor, liquidity):
 
+        # as res0, res1 comes always from pylon. No need to translate this
         (reserve0, reserve1) = self.get_pair_reserves()
         (sync_reserve0, sync_reserve1) = self.get_sync_reserves()
 
@@ -539,7 +564,6 @@ class Pylon:
         ptb = self.uniswap.pool_token.balance_of(self.address)
         max_pool_tokens = 0
 
-
         if is_anchor:
             pylon_share = ptb * (self.vab - sync_reserve1) / (reserve1 * 2)
             max_pool_tokens = self.anchor_pool_token.total_supply * (1 - sync_reserve1/self.vab)
@@ -548,8 +572,6 @@ class Pylon:
             max_pool_tokens = self.float_pool_token.total_supply * (1 - sync_reserve0 / (reserve0 * 2 * self.gamma + sync_reserve0))
 
         return liquidity * pylon_share/max_pool_tokens
-
-
 
     def _update(self, desired_ftv):
 
@@ -565,7 +587,6 @@ class Pylon:
 
         # desired ftv represents a target ftv that we have to fit for
         # an important adjustment to make is price, since async100 mints could change it
-
 
         (sync0, sync1) = self.get_sync_reserves()
         (new_reserve0, new_reserve1) = self.get_pair_reserves()
@@ -588,7 +609,6 @@ class Pylon:
         if x < (adjusted_vab ** 2)/k:
             self.p2y = adjusted_ftv
             self.p2x = reserve1/reserve0
-
         else:
             # resets p2 to its default value
             self.p2y = (2 * k/adjusted_vfb) - adjusted_vab

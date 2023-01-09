@@ -1,4 +1,6 @@
 import difflib
+# TODO: inherit from click.options to do this more user friendly
+# https://stackoverflow.com/questions/49186376/how-to-create-a-command-line-prompt-that-displays-options-next-to-integers-and-a
 
 functions = [
     "pylon.mint_pool_tokens",
@@ -46,7 +48,6 @@ def parse_command():
     if function == "exit" or function == "debug":
         return function
 
-
     calldata = "{}(".format(function)
 
     for index, item in enumerate(params):
@@ -79,5 +80,6 @@ def is_number(num):
         try:
             if isinstance(float(num), float):
                 return True
+
         except:
             return False

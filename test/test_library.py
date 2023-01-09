@@ -15,27 +15,34 @@ def test_get_max(maximums):
     assert results == expected_results
 
 
-def test_gamma(plt):
-    values = list(range(0, 200))
-    rectified = [v if v > 0 else 0 for v in values]
-    assert all(v >= 0 for v in rectified)
-    plt.plot(values, label="Original")
-    plt.plot(rectified, label="Rectified")
-    plt.legend()
-    plt.saveas = "test_rec.png"
+# this function calculates the y point given the 3 points in parabola
+@pytest.mark.parametrize("coefficients", [
+    ((10, 100, 2, 5), (0.9375, 0.625)),
+    ((20, 5, 100, 2), (-0.002875, 0.3075)),
+    ((20, 100, 20, 20), (0, 1.0)) # test for p3x == p2x
+])
+def test_parabola_coefficient(coefficients):
+    (args, expected_results) = coefficients
+    results = zirconlib.calculate_parabola_coefficients(*args)
+    assert results == expected_results
 
-#
-# def test_calculate_anchor_factor():
-#     assert False
-#
-# def test_calculate_anchor_factor_burn():
-#     assert False
-#
-# def test_anchor_factor_float_add():
-#     assert False
-#
-# def test_anchor_factor_float_burn():
-#     assert False
-#
-#
-#
+
+# @pytest.mark.parametrize("coefficients", [
+#     ((10, 100, 2, 5), (0.9375, 0.625)),
+#     ((20, 5, 100, 2), (-0.002875, 0.3075)),
+#     ((20, 100, 20, 20), (0, 1.0))
+#     # test for p3x == p2x
+# ])
+# def test_get_ftv_for_x(coefficients):
+#     (args, expected_results) = coefficients
+#     results = zirconlib.get_ftv_for_x(*args)
+#     assert results == expected_results
+
+# def test_calculate_gamma(plt):
+#     values = list(range(0, 200))
+#     rectified = [v if v > 0 else 0 for v in values]
+#     assert all(v >= 0 for v in rectified)
+#     plt.plot(values, label="Original")
+#     plt.plot(rectified, label="Rectified")
+#     plt.legend()
+#     plt.saveas = "test_rec.png"

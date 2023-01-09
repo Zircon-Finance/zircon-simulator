@@ -37,36 +37,37 @@ def start():
     pylon.mint_pool_tokens("self", 1, False)
 
     while True:
+        try:
+            if not debug:
+                try:
+                    command = controller.parse_command()
 
-        if not debug:
-            try:
+                    if command == "exit":
+                        break
+                    if command == "debug":
+                        debug = not debug
+                    eval(command)
+                    print("posteval", command)
+                except Exception as e:
+                    print("Error executing command: ", e)
+            else:
                 command = controller.parse_command()
-
                 if command == "exit":
                     break
                 if command == "debug":
                     debug = not debug
                 eval(command)
-                print("posteval", command)
-            except Exception as e:
-                print("Error executing command: ", e)
-        else:
-            command = controller.parse_command()
-            if command == "exit":
-                break
-            if command == "debug":
-                debug = not debug
-            eval(command)
-            print("posteval ", command)
-
-
-    show_stats(38897447*0.995, 10915*0.995, 29417-2488, 1.055)  # Press ⌘F8 to toggle the breakpoint.
-    plot_pywlon(38897447*0.995, 10915*0.995, 29417-2488, 1.055)
-
-
+                print("posteval ", command)
+                plot_pylon(pylon.uniswap.reserve0,
+                           pylon.uniswap.reserve1,
+                           pylon.vab - pylon.sync_reserve1,
+                           pylon.vfb - pylon.sync_reserve0,
+                           pylon.p2x,
+                           pylon.p2y)
+        except Exception as e:
+            print(e)
+            print("Wrong Command")
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     start()
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
