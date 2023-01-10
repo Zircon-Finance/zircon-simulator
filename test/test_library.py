@@ -27,6 +27,17 @@ def test_parabola_coefficient(coefficients):
     assert results == expected_results
 
 
+@pytest.mark.parametrize("coefficients", [
+    ((2, -3), (3/4, -1/8)),
+    ((-4, 6), (3/4, 13/4)),
+    ((0.5, 1), (-1, 1/2))
+])
+def test_parabola_vertex(coefficients):
+    (args, expected_results) = coefficients
+    results = zirconlib.get_parabola_vertex(*args)
+    assert results == expected_results
+
+
 # @pytest.mark.parametrize("coefficients", [
 #     ((10, 100, 2, 5), (0.9375, 0.625)),
 #     ((20, 5, 100, 2), (-0.002875, 0.3075)),

@@ -51,11 +51,14 @@ def calculate_gamma(vab, vfb, p2x, p2y, sync_reserve0, sync_reserve1, reserve0, 
         if a != 0:
             m = -b / (2 * a)
             print("Debug: Calculate Gamma: m: {} p3x: {}".format(m, p3x))
+        (ver_x, ver_y) = get_parabola_vertex(a, b)
 
         # derivative check at p3x (crossing point)
         # sufficient to check if the parabola is too curved at any point
 
-        if 2 * a * p3x + b > 0:
+        if ver_y < 0:
+            return ((p2y / p2x) * x)/(2*reserve1), True
+        elif 2 * a * p3x + b > 0:
             return ((a * (x ** 2) + b * x)/(2 * reserve1)), True
         else:
             # In solidity this should just revert
@@ -75,11 +78,15 @@ def get_ftv_for_x(x, p2x, p2y, k, adjusted_vab, out=False):
         result = 2 * math.sqrt(k * x) - adjusted_vab
     else:
 
+        # result = ((math.atan(x - p3x)/(math.pi/2))+1)
         a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab, out)
+        (ver_x, ver_y) = get_parabola_vertex(a, b)
 
         # derivative check at p3x (crossing point)
         # sufficient to check if the parabola is too curved at any point
-        if 2 * a * p3x + b > 0:
+        if ver_y < 0:
+            result = (p2y/p2x) * x
+        elif 2 * a * p3x + b > 0:
             result = a * (x ** 2) + b * x
         else:
             # In solidity this should just revert
@@ -89,6 +96,14 @@ def get_ftv_for_x(x, p2x, p2y, k, adjusted_vab, out=False):
     if not out:
         print("Debug: GetFTV: X: {}, result: {}, p3x: {}".format(x, result, p3x))
     return result
+
+
+def get_parabola_vertex(a, b):
+    if a == 0:
+        return 0, 0
+    x = -b / (2*a)
+    y = ((4 * a) - (b * b)) / (4 * a)
+    return x, y
 
 
 def calculate_parabola_coefficients(p2x, p2y, p3x, p3y, out=False):

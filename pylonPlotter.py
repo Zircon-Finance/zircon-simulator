@@ -9,11 +9,11 @@ from pylonsim import zirconlib
 
 
 def show_stats(reserve0, reserve1, vab, anchor_k):
-    price = reserve1/reserve0
+    price = reserve1 / reserve0
     tpv = reserve1 * 2
     k = reserve0 * reserve1
 
-    vfb = k/(vab * anchor_k)
+    vfb = k / (vab * anchor_k)
     sqrt_k_factor = math.sqrt(anchor_k ** 2 - anchor_k)
     vab_multiplier = anchor_k - sqrt_k_factor if sqrt_k_factor < anchor_k else anchor_k + sqrt_k_factor
     reserve_switch = vab * vab_multiplier
@@ -21,38 +21,52 @@ def show_stats(reserve0, reserve1, vab, anchor_k):
     if reserve1 > reserve_switch:
         gamma = 1 - vab / tpv
     else:
-        gamma = tpv/(4*vab*anchor_k)
+        gamma = tpv / (4 * vab * anchor_k)
 
     print("Price is {}, vfb is {}, reserve switch is {}, while gamma is {}".format(price, vfb, reserve_switch, gamma))
 
 
-def plot_pylon(reserve0, reserve1, vab, vfb, p2x, p2y):
+def plot_pylon(reserve0, reserve1, vab, vfb, p2x, p2y, sync_r0, sync_r1):
+    print("Starting to plot...")
     (k, kv, p3x, a, b) = calculate_parameters(reserve0, reserve1, vab, vfb, p2x, p2y)
 
-    end_price = reserve1/reserve0 * 5
-
-    plot.scatter([0], [0])
+    p1 = plot.scatter([0], [0])
     p2 = plot.scatter([p2x], [p2y])
     p3 = plot.scatter([p3x], vab)
+
+    # p3 = plot.scatter([kv/k], zirconlib.get_ftv_for_x(kv/k, p2x, p2y, k, vab, True))
 
     price = reserve1 / reserve0
     ftv = zirconlib.get_ftv_for_x(price, p2x, p2y, k, vab)
     gamma = ftv / (2 * reserve1)
     res = plot.scatter(price, ftv)
 
-    x = numpy.linspace(0, end_price, 10000)
-    y = [zirconlib.get_ftv_for_x(item, p2x, p2y, k, vab, True) for index, item in enumerate(x)]
-    plot.plot(x, y)
+    x = numpy.linspace(0, max(int(price), int(p3x), int(p2x)), 1000)
 
-    plot.legend((p2, p3, res),
+    y = [zirconlib.get_ftv_for_x(item, p2x, p2y, k, vab, True) for index, item in enumerate(x) if item < p3x]
+    y2 = [zirconlib.get_ftv_for_x(item, p2x, p2y, k, vab, True) for index, item in enumerate(x[len(y):])]
+    x2 = x[len(y):]
+    x = x[0:len(y)]
+
+    plot.plot(x, y)
+    plot.plot(x2, y2)
+
+    plot.legend((p2, p3, res, p1, p1, p1),
                 ('P2 ({:.2f}, {:.2f})'.format(p2x, p2y),
                  'P3 ({:.2f}, {:.2f})'.format(p3x, vab),
-                 'P: {:.2f}, FTV: {:.2f}, gamma: {:.2f}, gamma2: {:.2f}'
-                 .format(price, ftv, gamma, 1 - vab/(2*reserve1))),
+                 'P: ({:.2f}, {:.2f})'
+                 .format(price, ftv),
+                 'Γ: {:.2f}, k: {:.2f}, kv: {:.2f}'
+                 .format(gamma, k, kv),
+                 'R0: {:.2f}, R1: {:.2f}, PR0: {:.2f}, PR1:{:.2f}'
+                 .format(reserve0, reserve1, sync_r0, sync_r1),
+                 'a: {:.2f}, b: {:.2f}'
+                 .format(a, b)),
                 scatterpoints=1,
                 loc='lower right',
                 ncol=1,
                 fontsize=8)
+
     plot.show()
 
 
@@ -74,7 +88,7 @@ def calculate_parameters(reserve0, reserve1, vab, vfb, p2x, p2y):
 
 
 def pylon_function(x, k, vab, vfb, p3x, a, b):
-    reserve1 = numpy.sqrt(k*x)
+    reserve1 = numpy.sqrt(k * x)
     result = numpy.zeros_like(x)
 
     # TODO: Switch to using the gamma formula directly

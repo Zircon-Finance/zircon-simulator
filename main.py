@@ -63,7 +63,9 @@ def start():
                            pylon.vab - pylon.sync_reserve1,
                            pylon.vfb - pylon.sync_reserve0,
                            pylon.p2x,
-                           pylon.p2y)
+                           pylon.p2y,
+                           pylon.sync_reserve0,
+                           pylon.sync_reserve1)
         except Exception as e:
             print(e)
             print("Wrong Command")

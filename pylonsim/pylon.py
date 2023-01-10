@@ -112,6 +112,7 @@ class Pylon:
             print("Debug: Initial FTV: {}, AmountPool: {}".format(ftv * reserve1/reserve0, amount_pool))
             self.vfb += self.vfb * true_amount_out/(ftv + sync_reserve0)
             desired_ftv = (ftv + amount_pool) * reserve1/reserve0
+
             desired_ftv_from_formula = zirconlib.get_ftv_for_x(
                 reserve1 / reserve0,
                 self.p2x,
@@ -128,7 +129,7 @@ class Pylon:
 
             # TODO: Modify this to getFTV for X too?
             self.vab += amount_out
-            desired_ftv = (2 * reserve1 * self.gamma) + (2 * float_into_pool * self.gamma) * reserve1/reserve0
+            desired_ftv = (2 * reserve1 * self.gamma) + float_into_pool * reserve1/reserve0
 
             desired_ftv_from_formula = zirconlib.get_ftv_for_x(
                 reserve1/reserve0,
