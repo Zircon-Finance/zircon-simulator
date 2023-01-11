@@ -123,6 +123,22 @@ def calculate_parabola_coefficients(p2x, p2y, p3x, p3y, out=False):
     return a, b
 
 
+def get_omega_for_x(x, p2x, p2y, k, adjusted_vab, out=False):
+    p3x = (adjusted_vab ** 2) / k
+    result_1 = 2 * math.sqrt(k * x) # - adjusted_vab
+    a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab, out)
+    (ver_x, ver_y) = get_parabola_vertex(a, b)
+    result_0 = 0
+    if ver_y < 0:
+        result = (p2y / p2x) * x
+    elif 2 * a * p3x + b > 0:
+        result = a * (x ** 2) + b * x
+    else:
+        return 0
+
+    return result_1 - result_0
+
+
 def calculate_p2(k, vab, vfb):
     print("Debug: ZirconLib: P2 calc k: {}, vab: {}, vfb: {}".format(k, vab, vfb))
     p2y = (2 * k/vfb) - vab
