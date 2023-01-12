@@ -26,16 +26,19 @@ class Uniswap:
         self.anchor_token.transfer(to, self.address, amount1)
 
         if self.pool_token.total_supply == 0:
+
             liquidity = math.sqrt(amount0 * amount1) - self.min_liquidity
             self.pool_token.mint("zero", self.min_liquidity)
+
         else:
+
             liquidity = min(amount0 * self.pool_token.total_supply / self.reserve0,
                             amount1 * self.pool_token.total_supply / self.reserve1)
 
         self.pool_token.mint(to, liquidity)
         self._update(self.reserve0 + amount0, self.reserve1 + amount1)
 
-        #print("Uniswap: Minted {} {} to {}".format(liquidity, self.pool_token.ticker, to))
+        # print("Uniswap: Minted {} {} to {}".format(liquidity, self.pool_token.ticker, to))
         return liquidity
 
     def _update(self, balance0, balance1):
@@ -62,10 +65,9 @@ class Uniswap:
         balance1 = self.anchor_token.balance_of(self.address) + amount1_in - amount1_out
 
         # print("Balance0: {}, Balance1: {}, reserve0: {}, reserve1: {}"
-          #    .format(balance0, balance1, self.reserve0, self.reserve1))
+        # .format(balance0, balance1, self.reserve0, self.reserve1))
         # print("Kp, k", balance0 * balance1, self.reserve0 * self.reserve1)
         if balance0 * balance1 + 0.1 >= self.reserve0 * self.reserve1:
-
 
             self.float_token.transfer(to, self.address, amount0_in)
             self.anchor_token.transfer(to, self.address, amount1_in)
@@ -81,6 +83,7 @@ class Uniswap:
             return -1, -1
 
     def get_amount_out(self, amount_in, float_is_in):
+        amount_in_with_fee = amount_in * 1000
         if float_is_in:
             reserve_in = self.reserve0
             reserve_out = self.reserve1
@@ -88,7 +91,7 @@ class Uniswap:
             reserve_in = self.reserve1
             reserve_out = self.reserve0
 
-        return amount_in * reserve_out / (reserve_in + amount_in)
+        return amount_in_with_fee * reserve_out / ((reserve_in * 1000) + amount_in_with_fee)
 
     def mint_one_side(self, amount0, amount1, to):
 
@@ -98,10 +101,10 @@ class Uniswap:
         balance0 = self.float_token.balance_of(self.address)
         balance1 = self.anchor_token.balance_of(self.address)
 
-        sqrtk = math.sqrt(balance0 * balance1)
-        sqrtk_init = math.sqrt(self.reserve0 * self.reserve1)
+        sqrt_k = math.sqrt(balance0 * balance1)
+        sqrt_k_init = math.sqrt(self.reserve0 * self.reserve1)
 
-        liquidity = (sqrtk - sqrtk_init) * self.pool_token.total_supply / sqrtk_init
+        liquidity = (sqrt_k - sqrt_k_init) * self.pool_token.total_supply / sqrt_k_init
 
         self.pool_token.mint(to, liquidity)
         self._update(balance0, balance1)

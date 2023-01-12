@@ -125,7 +125,7 @@ def calculate_parabola_coefficients(p2x, p2y, p3x, p3y, out=False):
 
 def get_omega_for_x(x, p2x, p2y, k, adjusted_vab, out=False):
     p3x = (adjusted_vab ** 2) / k
-    result_1 = 2 * math.sqrt(k * x) # - adjusted_vab
+    result_1 = 2 * math.sqrt(k * x)
     a, b = calculate_parabola_coefficients(p2x, p2y, p3x, adjusted_vab, out)
     (ver_x, ver_y) = get_parabola_vertex(a, b)
     result_0 = 0
